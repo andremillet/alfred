@@ -28,6 +28,7 @@ Alfred é construído sobre um paradigma de **Agente Orientado a Eventos com Fer
 *   `/index`: Indexa (ou reindexa) todas as funções Python no projeto. Mostra uma lista de todas as funções encontradas.
 *   `/benchmark <function_name>`: Mede o tempo de execução de uma função específica. A função já deve ter sido indexada.
 *   `/suggest <function_name>`: Fornece uma sugestão de otimização para uma função específica. (Atualmente, retorna um placeholder).
+*   `/test <test_file_path>`: Executa testes unitários em um arquivo de teste específico usando pytest.
 *   `/exit`: Encerra o Alfred.
 
 **Recursos Adicionais:**
@@ -35,6 +36,7 @@ Alfred é construído sobre um paradigma de **Agente Orientado a Eventos com Fer
 
 ## Próximos Passos
 
-1.  Implementar a chamada real à API na `CodeSuggestionTool`.
-2.  Refatorar o `alfred.py` para melhorar a modularidade.
-3.  Adicionar uma ferramenta para execução de testes unitários.
+1.  Implementar a chamada real à API na `CodeSuggestionTool` (atualmente simulada devido a limites de cota da API).
+2.  Refatorar o `alfred.py` para melhorar a modularidade (concluído, com comandos agora carregados dinamicamente).
+3.  Adicionar uma ferramenta para execução de testes unitários (concluído).
+4.  Atualizar o `README.md` com as novas funcionalidades (concluído).

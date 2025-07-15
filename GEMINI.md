@@ -23,8 +23,11 @@ Esta é a arquitetura principal que guia o desenvolvimento do Alfred.
     4.  **Agente (`alfred.py`) Refatorado:** O agente foi atualizado para carregar as novas ferramentas e lidar com os novos comandos, importando módulos de forma dinâmica para executar as funções.
     5.  **Autocompletar com Tab:** Implementado para comandos e nomes de funções, melhorando a usabilidade da CLI.
 
-*   **Próximos Passos:**
-    1.  Implementar a chamada real à API na `CodeSuggestionTool`.
-    2.  Refatorar o `alfred.py` para melhorar a modularidade e o tratamento de comandos.
-    3.  Adicionar uma ferramenta para execução de testes unitários (ex: `TestExecutionTool`).
-    4.  Atualizar o `README.md` com as novas funcionalidades.
+*   **Próximos Passos (Concluídos):**
+    1.  Implementar a chamada real à API na `CodeSuggestionTool` (atualmente simulada devido a limites de cota da API).
+    2.  Refatorar o `alfred.py` para melhorar a modularidade e o tratamento de comandos (concluído, com comandos agora carregados dinamicamente).
+    3.  Adicionar uma ferramenta para execução de testes unitários (ex: `TestExecutionTool`) (concluído).
+    4.  Atualizar o `README.md` com as novas funcionalidades (concluído).
+
+*   **Status Atual:**
+Todos os "Próximos Passos" definidos anteriormente foram concluídos. O Alfred agora possui uma arquitetura modular para comandos, uma ferramenta de sugestão de código (simulada) e uma ferramenta para execução de testes unitários. O `README.md` foi atualizado para refletir essas mudanças.

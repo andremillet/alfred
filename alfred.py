@@ -4,6 +4,7 @@ import readline
 from code_parser import find_functions_in_file
 from benchmarking_tool import get_tool as get_benchmarking_tool
 from code_suggestion import get_tool as get_suggestion_tool
+from test_execution_tool import get_tool as get_test_execution_tool
 
 class AlfredAgent:
     """The main agent for Alfred. It understands the context and uses tools to act."""
@@ -14,10 +15,31 @@ class AlfredAgent:
         self.tools = {
             "code_parser": find_functions_in_file,
             "benchmarking": get_benchmarking_tool(),
-            "suggestion": get_suggestion_tool()
+            "suggestion": get_suggestion_tool(),
+            "test_execution": get_test_execution_tool()
         }
-        self.commands = ["/index", "/benchmark", "/suggest", "/exit"]
+        self.commands = {} # Store command instances
+        self._load_commands() # Load commands dynamically
         self.index_project()
+
+
+    def _load_commands(self):
+        commands_dir = os.path.join(self.project_root, "commands")
+        for filename in os.listdir(commands_dir):
+            if filename.endswith("_command.py"):
+                module_name = filename[:-3] # Remove .py
+                command_name = "/" + module_name.replace("_command", "")
+                
+                spec = importlib.util.spec_from_file_location(module_name, os.path.join(commands_dir, filename))
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                
+                # Assuming the class name is CamelCase of the module name
+                class_name = "".join(word.capitalize() for word in module_name.split("_"))
+                command_class = getattr(module, class_name)
+                self.commands[command_name] = command_class(self)
+        print(f"Loaded commands: {list(self.commands.keys())}")
+
 
     def index_project(self):
         """Uses the code_parser tool to index all .py files in the project."""
@@ -31,84 +53,21 @@ class AlfredAgent:
                     self.code_index.update(functions)
         print(f"Indexing complete. {len(self.code_index)} functions found.")
 
-    def run_command(self, command):
+    def run_command(self, command_line):
         """Parses and executes a command."""
-        parts = command.strip().split()
+        parts = command_line.strip().split(maxsplit=1)
         command_name = parts[0]
+        args = parts[1].split() if len(parts) > 1 else []
 
-        if command_name == "/index":
-            self.index_project() # Re-index to show the list
-            self._handle_index_command()
-        elif command_name == "/benchmark":
-            self._handle_benchmark_command(parts[1:])
-        elif command_name == "/suggest":
-            self._handle_suggest_command(parts[1:])
+        if command_name == "/exit":
+            print("Exiting Alfred.")
+            return False # Signal to exit the main loop
+        
+        if command_name in self.commands:
+            self.commands[command_name].execute(args)
         else:
             print(f"Unknown command: {command_name}")
-
-    def _handle_index_command(self):
-        """Handles the /index command."""
-        print("\n--- Functions Indexed ---")
-        if not self.code_index:
-            print("No functions found.")
-        for func_name, data in self.code_index.items():
-            relative_path = os.path.relpath(data['file_path'], self.project_root)
-            print(f"- {func_name} (in {relative_path})")
-        print("-----------------------\n")
-
-    def _handle_benchmark_command(self, args):
-        """Handles the /benchmark command."""
-        if len(args) != 1:
-            print("Usage: /benchmark <function_name>")
-            return
-
-        func_name = args[0]
-        if func_name not in self.code_index:
-            print(f"Function '{func_name}' not found in index.")
-            return
-
-        func_info = self.code_index[func_name]
-        file_path = func_info['file_path']
-        
-        try:
-            # Dynamically import the module
-            spec = importlib.util.spec_from_file_location(func_name, file_path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            func_to_benchmark = getattr(module, func_name)
-
-            # Run the benchmark
-            benchmarking_tool = self.tools['benchmarking']
-            execution_time = benchmarking_tool.run(func_to_benchmark)
-            
-            print(f"Benchmarking '{func_name}':")
-            print(f"Execution time (1000 runs): {execution_time:.6f} seconds")
-
-        except Exception as e:
-            print(f"Error during benchmark: {e}")
-
-    def _handle_suggest_command(self, args):
-        """Handles the /suggest command."""
-        if len(args) != 1:
-            print("Usage: /suggest <function_name>")
-            return
-
-        func_name = args[0]
-        if func_name not in self.code_index:
-            print(f"Function '{func_name}' not found in index.")
-            return
-
-        func_info = self.code_index[func_name]
-        
-        try:
-            suggestion_tool = self.tools['suggestion']
-            suggestion = suggestion_tool.get_suggestion(func_info['code'])
-            
-            print(f"Suggestion for '{func_name}':")
-            print(suggestion)
-
-        except Exception as e:
-            print(f"Error during suggestion: {e}")
+        return True # Signal to continue the main loop
 
 class Completer:
     def __init__(self, agent):
@@ -118,13 +77,13 @@ class Completer:
         line = readline.get_line_buffer()
         parts = line.lstrip().split()
 
-        # Autocomplete for the command itself
         if len(parts) == 0 or (len(parts) == 1 and not line.endswith(' ')):
-            options = [cmd + ' ' for cmd in self.agent.commands if cmd.startswith(text)]
-        # Autocomplete for function names after a command
+            options = [cmd + ' ' for cmd in self.agent.commands.keys() if cmd.startswith(text)]
+            if '/exit'.startswith(text):
+                options.append('/exit ')
         elif len(parts) > 1 or (len(parts) == 1 and line.endswith(' ')):
             command = parts[0]
-            if command in ['/benchmark', '/suggest']:
+            if command in ['/benchmark', '/suggest']: # These commands expect a function name
                 prefix = parts[1] if len(parts) > 1 else ''
                 options = [f for f in self.agent.code_index if f.startswith(prefix)]
             else:
@@ -151,10 +110,9 @@ def main():
 
     while True:
         try:
-            command = input("> ")
-            if command.strip().lower() == "/exit":
+            command_line = input("> ")
+            if not agent.run_command(command_line):
                 break
-            agent.run_command(command)
         except KeyboardInterrupt:
             print("\nExiting...")
             break
