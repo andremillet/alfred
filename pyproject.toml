@@ -1,7 +1,12 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "alfred"
+name = "alfred-cli"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.10"
-dependencies = []
+description = "A personal development assistant."
+authors = [{ name = "Andre Millet", email = "andre.millet@gmail.com" }]
+
+[project.scripts]
+alfred = "alfred:main"

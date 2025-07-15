@@ -18,8 +18,9 @@ def find_functions_in_file(file_path):
         return {}
 
     with open(file_path, "r", encoding="utf-8") as source:
+        source_code = source.read()
         try:
-            tree = ast.parse(source.read(), filename=file_path)
+            tree = ast.parse(source_code, filename=file_path)
         except SyntaxError:
             return {}
 
@@ -30,6 +31,7 @@ def find_functions_in_file(file_path):
                 "file_path": file_path,
                 "start_line": node.lineno,
                 "end_line": node.end_lineno,
-                "parameters": [arg.arg for arg in node.args.args]
+                "parameters": [arg.arg for arg in node.args.args],
+                "code": ast.get_source_segment(source_code, node)
             }
     return functions
